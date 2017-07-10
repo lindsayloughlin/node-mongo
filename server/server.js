@@ -12,8 +12,6 @@ var {User} = require('./models/Users')
 // var newTodo = new Todo({
 // 	text: 'Cook dinner'
 // });
-
-
 // newTodo.save().next(()=>{
 
 // }, (e) => {
@@ -44,24 +42,25 @@ app.post('/todos/', (req, res) => {
     });
 });
 
+module.exports.app = app;
 
 
+// var otherTodo = new Todo({
+// 	text: 'edit this video',
+// 	completed: true,
+// 	completedAt: 123
+// });
+// var myUser = new User({
+//     email: 'lindsayloughlin@gmail.com'
+// });
+//
+// myUser.save().then((doc)=>{
+//     console.log(JSON.stringify(doc));
+// });
+//
+// otherTodo.save().then((doc)=> {
+// 	console.log(JSON.stringify(doc, undefined, 2));
+// }, (e) => {
+// 	console.log('unable to save', e);
+// });
 
-var otherTodo = new Todo({
-	text: 'edit this video',
-	completed: true,
-	completedAt: 123
-});
-var myUser = new User({
-    email: 'lindsayloughlin@gmail.com'
-});
-
-myUser.save().then((doc)=>{
-    console.log(JSON.stringify(doc));
-});
-
-otherTodo.save().then((doc)=> {
-	console.log(JSON.stringify(doc, undefined, 2));
-}, (e) => {
-	console.log('unable to save', e);
-});
