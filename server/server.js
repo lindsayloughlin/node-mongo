@@ -3,6 +3,7 @@
 var bodyParser = require('body-parser');
 var express = require('express');
 
+
 var mongoose = require('./db/mongoose');
 var {Todo} = require('./models/Todo');
 var {User} = require('./models/Users')
@@ -36,6 +37,17 @@ app.get('/todos/', (req, res)=> {
 
     });
 
+});
+
+app.post('/user', (req, res) =>{
+   var user = new User({
+       email: req.body.email
+   });
+
+   user.save().then((item)=> {
+       console.log('saved user item')
+       res.send(item);
+   });
 });
 
 app.post('/todos/', (req, res) => {
