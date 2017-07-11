@@ -20,11 +20,11 @@ var {ObjectID} = require('mongodb');
 var app = express();
 
 app.use(bodyParser.json());
+const port = process.env.PORT || 3000;
 
-app.listen(3000, () => {
-    console.log('Started on port 3000');
+app.listen(port, () => {
+    console.log(`Started on port ${port}`);
 });
-
 
 app.get('/todos/', (req, res) => {
     Todo.find().then((todos) => {

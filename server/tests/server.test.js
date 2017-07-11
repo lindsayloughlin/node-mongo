@@ -5,14 +5,18 @@
 
 const expect = require('expect');
 const request = require('supertest');
+const {ObjectID} = require('mongodb');
+
 
 const {app} = require('./../server');
 const {Todo} = require('./../models/Todo');
 
 const todosSeed = [{
-    text: 'First test todo'
-},{
-    text: 'Second test todo'
+    text: 'First test todo',
+    _id: new ObjectID()
+}, {
+    text: 'Second test todo',
+    _id: new ObjectID()
 }];
 
 
@@ -20,7 +24,7 @@ beforeEach((done) => {
     // wipe everything.
     Todo.remove({}).then(() => {
         return Todo.insertMany(todosSeed);
-    }).then(()=> done());
+    }).then(() => done());
 });
 
 describe('POST /todos', () => {
@@ -69,15 +73,47 @@ describe('POST /todos', () => {
 });
 
 describe('GET /todos', () => {
-    it('should get all todos', (done) =>{
+    it('should get all todos', (done) => {
         request(app)
             .get('/todos')
             .expect(200)
-            .expect((res)=>{
+            .expect((res) => {
                 expect(res.body.todos.length).toBe(2);
                 console.log('done checking length');
             })
             .end(done)
     });
+
+    describe('GET /todos/:id', () => {
+
+        it('should return a 404 if todo not found', (done) => {
+                var fakeId = new ObjectID();
+                request(app)
+                    .get(`/todos/${fakeId.toHexString()}`)
+                    .expect(404)
+                    .end(done);
+        });
+
+
+        it('should get a specific todo by id', (done) => {
+            request(app)
+                .get(`/todos/${todosSeed[0]._id.toHexString()}`)
+                .expect(200)
+                .expect((res) => {
+                    expect(res.body.todo.text).toBe(todosSeed[0].text);
+                })
+                .end(done);
+        });
+
+
+        it('should get a specific 404 for non-object ids', (done) => {
+           request(app)
+               .get(`/todos/123avc`)
+               .expect(404)
+               .end(done);
+        });
+    });
+
+
 });
 
