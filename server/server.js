@@ -1,14 +1,11 @@
-
-
 var bodyParser = require('body-parser');
 var express = require('express');
 
 
 var mongoose = require('./db/mongoose');
 var {Todo} = require('./models/Todo');
-var {User} = require('./models/Users')
-
-
+var {User} = require('./models/Users');
+var {ObjectID} = require('mongodb');
 
 // var newTodo = new Todo({
 // 	text: 'Cook dinner'
@@ -24,30 +21,49 @@ var app = express();
 
 app.use(bodyParser.json());
 
-app.listen(3000, ()=>{
+app.listen(3000, () => {
     console.log('Started on port 3000');
 });
 
 
-app.get('/todos/', (req, res)=> {
-    Todo.find().then((todos)=> {
+app.get('/todos/', (req, res) => {
+    Todo.find().then((todos) => {
         res.send({todos});
     }, (e) => {
-       res.status(400).send(e);
+        res.status(400).send(e);
 
     });
 
 });
 
-app.post('/user', (req, res) =>{
-   var user = new User({
-       email: req.body.email
-   });
+app.get('/todos/:id', (req, res) => {
+    //res.send(req.params);
 
-   user.save().then((item)=> {
-       console.log('saved user item')
-       res.send(item);
-   });
+    var id = req.params.id;
+    if (!ObjectID.isValid(id)) {
+        return res.status(404).send();
+    }
+    // Find by id
+    Todo.findById(id).then((todo) => {
+        if (todo) {
+            return res.send({todo});
+        }
+        res.status(404).send();
+
+    }).catch((err) => {
+        res.status(500).send(err);
+    });
+});
+
+app.post('/users', (req, res) => {
+    var user = new User({
+        email: req.body.email
+    });
+
+    user.save().then((item) => {
+        console.log('saved user item')
+        res.send(item);
+    });
 });
 
 app.post('/todos/', (req, res) => {
@@ -59,9 +75,9 @@ app.post('/todos/', (req, res) => {
     todo.save().then((item) => {
         console.log('saved item');
         res.send(item);
-    }, (e)=>{
-       console.log(e);
-       res.status(400).send(e);
+    }, (e) => {
+        console.log(e);
+        res.status(400).send(e);
     });
 });
 
