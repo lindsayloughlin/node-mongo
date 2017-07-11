@@ -16,6 +16,8 @@ const todosSeed = [{
     _id: new ObjectID()
 }, {
     text: 'Second test todo',
+    completed: true,
+    completedAt: 333,
     _id: new ObjectID()
 }];
 
@@ -158,6 +160,58 @@ describe('GET /todos', () => {
                 .expect(404)
                 .end(done);
         });
+
+
+    });
+
+    describe('it should patch the todo', ()=>{
+        it('it should patch the todo', (done)=>{
+
+            // 200
+            // custom assert text == updated
+            // completed == true
+            // completedAt is number.
+
+            var id = todosSeed[0]._id.toHexString();
+            var text = 'new text';
+            request(app).patch(`/todos/${id}`)
+                .send({completed: true, text})
+                .expect(200)
+                .expect((res)=> {
+                    console.log(JSON.stringify(res.body));
+                    var todo = res.body.todo;
+                    expect(todo.text).toBe(text);
+                    expect(todo.completed).toBe(true);
+                    expect(todo.completedAt).toExist().toBeA('number');
+
+                })
+                .end(done)
+        });
+
+        it('it should clear completedAt at when completed is omitted', (done)=>{
+
+            var id = todosSeed[1]._id;
+            var text = 'update again';
+            request(app)
+                .patch(`/todos/${id}`)
+                .send({
+                    completed: false,
+                    text
+                })
+                .expect(200)
+                .expect((res)=>{
+                    var todo = res.body.todo;
+                    expect(todo.text).toBe(text);
+                    expect(todo.completed).toBe(false);
+                    expect(todo.completedAt).toNotExist();
+                })
+                .end(done);
+
+            // 200
+           // completed == false
+           // completedAt is .toNotExist();
+        });
+
     });
 
 });

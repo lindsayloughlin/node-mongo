@@ -1,3 +1,5 @@
+require('./config');
+
 const bodyParser = require('body-parser');
 const express = require('express');
 const _ = require('lodash');
@@ -21,7 +23,7 @@ var {ObjectID} = require('mongodb');
 var app = express();
 
 app.use(bodyParser.json());
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 
 app.listen(port, () => {
     console.log(`Started on port ${port}`);
@@ -38,27 +40,27 @@ app.get('/todos/', (req, res) => {
 });
 
 app.patch('/todos/:id', (req, res) => {
-   var id = req.params.id;
+    var id = req.params.id;
 
-   if (!ObjectID.isValid(id)) {
-       return res.status(404).send();
-   }
+    if (!ObjectID.isValid(id)) {
+        return res.status(404).send();
+    }
 
-   var body = _.pick(req.body, ['text', 'completed']);
-   if (_.isBoolean(body.completed) && body.completed) {
-       body.completedAt = new Date().getTime();
-   } else {
-       body.complete = false;
-       body.completedAt = null;
-   }
-   //db.findByIdAndUpdate(id, {$set: body}, {returnOriginal: false, new: true} )
-    Todo.findByIdAndUpdate(id, {$set: body}, {new: true}).then((todo)=>{
-       if (!todo) {
-           return res.send(404).send();
-       }
-       res.send({todo});
+    var body = _.pick(req.body, ['text', 'completed']);
+    if (_.isBoolean(body.completed) && body.completed) {
+        body.completedAt = new Date().getTime();
+    } else {
+        body.complete = false;
+        body.completedAt = null;
+    }
+    //db.findByIdAndUpdate(id, {$set: body}, {returnOriginal: false, new: true} )
+    Todo.findByIdAndUpdate(id, {$set: body}, {new: true}).then((todo) => {
+        if (!todo) {
+            return res.send(404).send();
+        }
+        res.send({todo});
     }).catch((e) => {
-      res.status(400).send(e);
+        res.status(400).send(e);
     });
 });
 
@@ -81,15 +83,26 @@ app.get('/todos/:id', (req, res) => {
     });
 });
 
-app.post('/users', (req, res) => {
-    var user = new User({
-        email: req.body.email
-    });
 
-    user.save().then((item) => {
-        console.log('saved user item');
-        res.send({item});
+app.post('/users', (req, res) => {
+
+    var body = _.pick(req.body, ['email', 'password']);
+
+    var user = new User(body);
+    user.save().then(() => {
+        //res.send(user);
+        return user.generateAuthToken();
+    }).then((token) => {
+        res.header('x-auth', token).send(user);
+    }).catch((e) => {
+        res
+            .status(500)
+            .send(e);
     });
+    // user.save().then((item) => {
+    //     console.log('saved user item');
+    //     res.send({item});
+    // });
 });
 
 
