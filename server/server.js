@@ -1,8 +1,9 @@
-var bodyParser = require('body-parser');
-var express = require('express');
+const bodyParser = require('body-parser');
+const express = require('express');
+const _ = require('lodash');
 
 
-var mongoose = require('./db/mongoose');
+const mongoose = require('./db/mongoose');
 var {Todo} = require('./models/Todo');
 var {User} = require('./models/Users');
 var {ObjectID} = require('mongodb');
@@ -36,6 +37,31 @@ app.get('/todos/', (req, res) => {
 
 });
 
+app.patch('/todos/:id', (req, res) => {
+   var id = req.params.id;
+
+   if (!ObjectID.isValid(id)) {
+       return res.status(404).send();
+   }
+
+   var body = _.pick(req.body, ['text', 'completed']);
+   if (_.isBoolean(body.completed) && body.completed) {
+       body.completedAt = new Date().getTime();
+   } else {
+       body.complete = false;
+       body.completedAt = null;
+   }
+   //db.findByIdAndUpdate(id, {$set: body}, {returnOriginal: false, new: true} )
+    Todo.findByIdAndUpdate(id, {$set: body}, {new: true}).then((todo)=>{
+       if (!todo) {
+           return res.send(404).send();
+       }
+       res.send({todo});
+    }).catch((e) => {
+      res.status(400).send(e);
+    });
+});
+
 app.get('/todos/:id', (req, res) => {
     //res.send(req.params);
 
@@ -61,8 +87,24 @@ app.post('/users', (req, res) => {
     });
 
     user.save().then((item) => {
-        console.log('saved user item')
-        res.send(item);
+        console.log('saved user item');
+        res.send({item});
+    });
+});
+
+
+app.delete('/todos/:id', (req, res) => {
+    var id = req.params.id;
+    if (!ObjectID.isValid(id)) {
+        return res.status(404).send();
+    }
+    console.log(`going to delete ${id}`);
+    Todo.findByIdAndRemove(id).then((todo) => {
+        console.log(`deleted ${JSON.stringify(todo)}`);
+        res.send({todo});
+    }, (err) => {
+        console.log('unable to remove ' + id);
+        res.sent(err);
     });
 });
 
