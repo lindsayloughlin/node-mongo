@@ -9,6 +9,7 @@ const mongoose = require('./db/mongoose');
 var {Todo} = require('./models/Todo');
 var {User} = require('./models/Users');
 var {ObjectID} = require('mongodb');
+var {authenticate} = require('./middleware/middleware');
 
 // var newTodo = new Todo({
 // 	text: 'Cook dinner'
@@ -62,6 +63,15 @@ app.patch('/todos/:id', (req, res) => {
     }).catch((e) => {
         res.status(400).send(e);
     });
+});
+
+
+// app.get('/users/me', (req,res)=> {
+//     res.send(req.user);
+// });
+
+app.get('/users/me', authenticate, (req, res)=>{
+    res.send(user);
 });
 
 app.get('/todos/:id', (req, res) => {
@@ -120,6 +130,8 @@ app.delete('/todos/:id', (req, res) => {
         res.sent(err);
     });
 });
+
+
 
 app.post('/todos/', (req, res) => {
     //console.log(req.body);
