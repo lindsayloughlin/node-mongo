@@ -1,8 +1,3 @@
-/**
- * Created by lloughlin on 10/7/17.
- */
-
-
 const expect = require('expect');
 const request = require('supertest');
 const {ObjectID} = require('mongodb');
@@ -10,24 +5,12 @@ const {ObjectID} = require('mongodb');
 
 const {app} = require('./../server');
 const {Todo} = require('./../models/Todo');
-
-const todosSeed = [{
-    text: 'First test todo',
-    _id: new ObjectID()
-}, {
-    text: 'Second test todo',
-    completed: true,
-    completedAt: 333,
-    _id: new ObjectID()
-}];
+const {User} = require('./../models/Users');
+const {todosSeed, populateTodos, users, populateUsers} = require('./seed/seed');
 
 
-beforeEach((done) => {
-    // wipe everything.
-    Todo.remove({}).then(() => {
-        return Todo.insertMany(todosSeed);
-    }).then(() => done());
-});
+beforeEach(populateUsers);
+beforeEach(populateTodos);
 
 describe('POST /todos', () => {
 
@@ -72,6 +55,86 @@ describe('POST /todos', () => {
             });
 
     });
+});
+
+describe('/users test', () => {
+
+    describe(' for /me part', () => {
+
+        it('should return user if authenticated', (done) => {
+            // return the current user.
+            console.log('token', users[0].tokens[0].token);
+            request(app)
+                .get('/users/me')
+                .set('x-auth', users[0].tokens[0].token)
+                .expect(200)
+                .expect((res) => {
+                    expect(res.body._id).toBe(users[0]._id.toHexString());
+                    // expect(res.body.email).toBe(users[0].email);
+                })
+                .end(done);
+        });
+
+        it('should return a 401 if not authenticated', (done) => {
+            request(app)
+                .get('/users/me')
+                .set('x-auth', 'not a valid hash')
+                .expect(401)
+                .expect((res) => {
+                    expect(res.body).toEqual({});
+                })
+                .end(done);
+        });
+    });
+
+    describe('user signup', () => {
+        it('should create a new user', (done) => {
+            var email = 'newuser@test.com';
+            var password = 'testpassword';
+            request(app)
+                .post('/users')
+                .send({
+                    email,
+                    password
+                })
+                .expect(200)
+                .expect((res)=>{
+                    User.findOne({email}).then((user)=>{
+                        expect(user).toExist();
+                        expect(user.password).toNotBe(password);
+
+                    });
+
+                })
+                .end(done)
+
+        });
+
+        it('should return validation errors if request invalid', (done)=>{
+            request(app)
+                .post('/users')
+                .send({
+                    email: 'seconduser@test1.com',
+                    password: 'short'
+                })
+                .expect(400)
+                // .expect((res)=>{
+                // })
+                .end(done);
+        });
+
+        it('should return validation errors for duplicate email', (done)=>{
+            request(app)
+                .post('/users')
+                .send({
+                    email: users[0].email,
+                    password: 'alongenoughpassword'
+                })
+                .expect(400)
+                .end(done);
+        });
+    });
+
 });
 
 describe('GET /todos', () => {
@@ -126,7 +189,7 @@ describe('GET /todos', () => {
                 .delete(`/todos/${hexId}`)
                 .expect(200)
                 .expect((res) => {
-                     // console.log(`printing result ${JSON.stringify(res.body.result._id)}`);
+                    // console.log(`printing result ${JSON.stringify(res.body.result._id)}`);
                     //expect(res.body.result._id).toBe(hexId);
 
                 })
@@ -135,11 +198,11 @@ describe('GET /todos', () => {
                         return done(err);
                     }
                     //expect(Todo.findById(hexId).count().toBe(0));
-                    Todo.findById(hexId).then((todo) =>{
+                    Todo.findById(hexId).then((todo) => {
                         console.log(`json item ${JSON.stringify(todo)}`);
                         expect(todo).toNotExist();
                         done();
-                    }).catch((e)=> done(e));
+                    }).catch((e) => done(e));
                 });
         });
 
@@ -164,8 +227,8 @@ describe('GET /todos', () => {
 
     });
 
-    describe('it should patch the todo', ()=>{
-        it('it should patch the todo', (done)=>{
+    describe('it should patch the todo', () => {
+        it('it should patch the todo', (done) => {
 
             // 200
             // custom assert text == updated
@@ -177,7 +240,7 @@ describe('GET /todos', () => {
             request(app).patch(`/todos/${id}`)
                 .send({completed: true, text})
                 .expect(200)
-                .expect((res)=> {
+                .expect((res) => {
                     console.log(JSON.stringify(res.body));
                     var todo = res.body.todo;
                     expect(todo.text).toBe(text);
@@ -188,7 +251,7 @@ describe('GET /todos', () => {
                 .end(done)
         });
 
-        it('it should clear completedAt at when completed is omitted', (done)=>{
+        it('it should clear completedAt at when completed is omitted', (done) => {
 
             var id = todosSeed[1]._id;
             var text = 'update again';
@@ -199,7 +262,7 @@ describe('GET /todos', () => {
                     text
                 })
                 .expect(200)
-                .expect((res)=>{
+                .expect((res) => {
                     var todo = res.body.todo;
                     expect(todo.text).toBe(text);
                     expect(todo.completed).toBe(false);
@@ -208,8 +271,8 @@ describe('GET /todos', () => {
                 .end(done);
 
             // 200
-           // completed == false
-           // completedAt is .toNotExist();
+            // completed == false
+            // completedAt is .toNotExist();
         });
 
     });

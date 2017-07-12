@@ -66,12 +66,11 @@ app.patch('/todos/:id', (req, res) => {
 });
 
 
-// app.get('/users/me', (req,res)=> {
-//     res.send(req.user);
-// });
 
 app.get('/users/me', authenticate, (req, res)=>{
-    res.send(user);
+    // console.log('/user/me function');
+    // console.log(`user : ${req.user}`);
+    res.send(req.user);
 });
 
 app.get('/todos/:id', (req, res) => {
@@ -100,15 +99,13 @@ app.post('/users', (req, res) => {
 
     var user = new User(body);
     user.save().then(() => {
-        //res.send(user);
         return user.generateAuthToken();
     }).then((token) => {
         res.header('x-auth', token).send(user);
     }).catch((e) => {
-        res
-            .status(500)
-            .send(e);
+        res.status(400).send(e);
     });
+
     // user.save().then((item) => {
     //     console.log('saved user item');
     //     res.send({item});
@@ -121,12 +118,12 @@ app.delete('/todos/:id', (req, res) => {
     if (!ObjectID.isValid(id)) {
         return res.status(404).send();
     }
-    console.log(`going to delete ${id}`);
+    // console.log(`going to delete ${id}`);
     Todo.findByIdAndRemove(id).then((todo) => {
-        console.log(`deleted ${JSON.stringify(todo)}`);
+        // console.log(`deleted ${JSON.stringify(todo)}`);
         res.send({todo});
     }, (err) => {
-        console.log('unable to remove ' + id);
+        // console.log('unable to remove ' + id);
         res.sent(err);
     });
 });

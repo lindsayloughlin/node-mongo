@@ -7,7 +7,6 @@ const jwt = require('jsonwebtoken');
 const _ = require('lodash');
 const bcrypt = require('bcryptjs');
 
-
 var UserSchema = new mongoose.Schema(
     {
         email: {
@@ -23,7 +22,7 @@ var UserSchema = new mongoose.Schema(
         },
         password: {
             type: String,
-            require: true,
+            required: true,
             minlength: 6
         },
         tokens: [{
@@ -52,13 +51,16 @@ var UserSchema = new mongoose.Schema(
         try {
             // abc123 is our secret.
             decoded = jwt.verify(token, 'abc123');
+            // console.log('decoded: ', decoded);
         } catch (e) {
+            console.log('rejecting', e);
             return Promise.reject();
             // return new Promise((resolve, reject)=>{
             //      reject();
             // });
         }
 
+        console.log('trying find one');
         return User.findOne({
            _id: decoded._id,
             'tokens.token': token,
