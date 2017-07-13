@@ -15,27 +15,32 @@ let signPass = 'abc123';
 
 const users = [{
     _id: user1Id,
-    email: 'l@l.com',
+    email: 'l@l1.com',
     password: 'userOnePass',
     tokens: [{
         access: 'auth',
         token: jwt.sign({_id: user1Id, access: 'auth'}, signPass).toString()
-    }]
+    }],
 },{
     _id: user2Id,
     email: 'l2@l2.com',
     password: 'userTwoPass',
-    tokens: jwt.sign({_id: user2Id, access: 'auth'}, signPass).toString()
-}];;;;;;;;;
+    tokens:[{
+        access: 'auth',
+        token: jwt.sign({_id: user2Id, access: 'auth'}, signPass).toString()
+    }]
+}];
 
 const todosSeed = [{
     text: 'First test todo',
-    _id: new ObjectID()
+    _id: new ObjectID(),
+    _creator: user1Id
 }, {
     text: 'Second test todo',
     completed: true,
     completedAt: 333,
-    _id: new ObjectID()
+    _id: new ObjectID(),
+    _creator: user2Id
 }];
 
 
@@ -47,21 +52,17 @@ const populateTodos = (done)=> {
     }).then(() => done());
 };
 
-const populateUsers=  (done)=>{
-    console.log('populating users');
-    User.remove({}).then(() => {
-        //return User.insertMany(users);
 
+const populateUsers = (done) => {
+    User.remove({}).then(() => {
         var userOne = new User(users[0]).save();
         var userTwo = new User(users[1]).save();
-
-        Promise.all([userOne,userTwo]);
+        return Promise.all([userOne, userTwo])
     }).then(() => done());
-};;;;;;;;;
-
+};
 module.exports = {
     todosSeed,
     populateTodos,
     users,
     populateUsers
-};;;;;;;;;
+};

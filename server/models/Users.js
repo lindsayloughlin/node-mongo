@@ -33,6 +33,10 @@ var UserSchema = new mongoose.Schema(
             token: {
                 type: String,
                 required: true
+            },
+            date: {
+                type: Date,
+                required: false,
             }
         }]
 
@@ -69,14 +73,45 @@ var UserSchema = new mongoose.Schema(
 
     };
 
+    UserSchema.statics.findByCredentials = function(email, password) {
+        var User = this;
+        return User.findOne({email}).then((user)=>{
+            //console.log(`found user ${user}`);
+            if (!user) {
+                return Promise.reject();
+            }
+            return new Promise((resolve, reject) => {
+                bcrypt.compare(password, user.password, (err, correct)=>{
+                    if (correct) {
+                        resolve(user);
+                    }
+                    reject();
+                });
+            });
+        });
+    };
+
+    UserSchema.methods.removeToken = function(token) {
+        var user = this;
+        return user.update({
+            $pull: {
+                tokens: {
+                    token: token
+                }
+            }
+        });
+    };
+
     UserSchema.methods.generateAuthToken = function() {
         var user = this;
         var access = 'auth';
         var token = jwt.sign({_id: user._id.toHexString(), access}, 'abc123').toString();
-        user.tokens.push({
+
+        // could put in push to support more than 1 token.
+        user.tokens = [{
             access,
-            token
-        });
+            token,
+        }];
         return user.save().then(()=>{
             return token;
         });

@@ -10,6 +10,7 @@ var {Todo} = require('./models/Todo');
 var {User} = require('./models/Users');
 var {ObjectID} = require('mongodb');
 var {authenticate} = require('./middleware/middleware');
+const bcrypt = require('bcryptjs');
 
 // var newTodo = new Todo({
 // 	text: 'Cook dinner'
@@ -30,17 +31,20 @@ app.listen(port, () => {
     console.log(`Started on port ${port}`);
 });
 
-app.get('/todos/', (req, res) => {
-    Todo.find().then((todos) => {
+app.get('/todos', authenticate, (req, res) => {
+    console.log('trying to find some todos');
+    Todo.find({
+        _creator: req.user._id
+    }).then((todos) => {
+        console.log('found some todos');
         res.send({todos});
     }, (e) => {
         res.status(400).send(e);
-
     });
 
 });
 
-app.patch('/todos/:id', (req, res) => {
+app.patch('/todos/:id', authenticate, (req, res) => {
     var id = req.params.id;
 
     if (!ObjectID.isValid(id)) {
@@ -55,7 +59,7 @@ app.patch('/todos/:id', (req, res) => {
         body.completedAt = null;
     }
     //db.findByIdAndUpdate(id, {$set: body}, {returnOriginal: false, new: true} )
-    Todo.findByIdAndUpdate(id, {$set: body}, {new: true}).then((todo) => {
+    Todo.findOneAndUpdate({_id: id, _creator: req.user._id }, {$set: body}, {new: true}).then((todo) => {
         if (!todo) {
             return res.send(404).send();
         }
@@ -66,14 +70,41 @@ app.patch('/todos/:id', (req, res) => {
 });
 
 
+app.post('/users/login', (req, res) => {
 
-app.get('/users/me', authenticate, (req, res)=>{
+    var userinfo = _.pick(req.body, ['email', 'password']);
+    //return res.send(userinfo);
+    // '$2a$10$qytJe1Mz35ys85l.lxQ1neSIrQcIRkuPyLCFCtGCPnWHvDdzlG3S.'
+
+    User.findByCredentials(userinfo.email, userinfo.password).then((user) => {
+        //return res.send(user);
+        return user.generateAuthToken().then((token) => {
+            //console.log(`in login ${token}`);
+            //user.save();
+            res.header('x-auth', token).send(user);
+        });
+    }).catch((e) => {
+        console.log('unable to find user');
+        res.status(401).send();
+    });
+
+});
+
+app.get('/users/me', authenticate, (req, res) => {
     // console.log('/user/me function');
     // console.log(`user : ${req.user}`);
     res.send(req.user);
 });
 
-app.get('/todos/:id', (req, res) => {
+app.delete('/users/me/token', authenticate, (req, res) => {
+    req.user.removeToken(req.token).then(() => {
+        res.status(200).send();
+    }, () => {
+        res.status(400).send();
+    });
+});
+
+app.get('/todos/:id', authenticate, (req, res) => {
     //res.send(req.params);
 
     var id = req.params.id;
@@ -81,7 +112,8 @@ app.get('/todos/:id', (req, res) => {
         return res.status(404).send();
     }
     // Find by id
-    Todo.findById(id).then((todo) => {
+    Todo.findOne({ _id: id, _creator: req.user._id})
+        .then((todo) => {
         if (todo) {
             return res.send({todo});
         }
@@ -91,7 +123,6 @@ app.get('/todos/:id', (req, res) => {
         res.status(500).send(err);
     });
 });
-
 
 app.post('/users', (req, res) => {
 
@@ -113,14 +144,18 @@ app.post('/users', (req, res) => {
 });
 
 
-app.delete('/todos/:id', (req, res) => {
+app.delete('/todos/:id', authenticate, (req, res) => {
     var id = req.params.id;
     if (!ObjectID.isValid(id)) {
         return res.status(404).send();
     }
     // console.log(`going to delete ${id}`);
-    Todo.findByIdAndRemove(id).then((todo) => {
+    Todo.findOneAndRemove({ _id: id, _creator : req.user._id}
+        ).then((todo) => {
         // console.log(`deleted ${JSON.stringify(todo)}`);
+        if (!todo) {
+            return res.status(404).send();
+        }
         res.send({todo});
     }, (err) => {
         // console.log('unable to remove ' + id);
@@ -129,11 +164,11 @@ app.delete('/todos/:id', (req, res) => {
 });
 
 
-
-app.post('/todos/', (req, res) => {
+app.post('/todos/', authenticate, (req, res) => {
     //console.log(req.body);
     var todo = new Todo({
-        text: req.body.text
+        text: req.body.text,
+        _creator: req.user._id
     });
 
     todo.save().then((item) => {
