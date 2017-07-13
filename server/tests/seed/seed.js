@@ -11,7 +11,7 @@ const jwt = require('jsonwebtoken');
 let user1Id = new ObjectID();
 let user2Id = new ObjectID();
 
-let signPass = 'abc123';
+let signPass = env.process.JWT_SECRET;
 
 const users = [{
     _id: user1Id,

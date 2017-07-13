@@ -12,7 +12,7 @@ const bcrypt = require('bcryptjs');
 // // makes sure token was not manipulated
 // jwt.verify
 
-var password = 'abc123!';
+var password = env.process.JWT_SECRET;
 
 bcrypt.genSalt(10, (err, salt)=> {
     console.log(`salt: ${salt}`);
